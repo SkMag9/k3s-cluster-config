@@ -1,0 +1,59 @@
+---
+- name: update all servers
+  become: yes
+  hosts: ubuntu
+  tasks:
+    - name: update caches
+      apt:
+        update_cache: yes
+    - name: update ubuntu servers
+      apt:
+        upgrade: yes
+        
+
+- name: configure loadbalancer 
+  become: yes
+  hosts: k3s-loadbalancer
+  tasks:
+    - name: install nginx
+      apt: 
+        name: nginx
+        state: latest
+    - name: start nginx
+      command: systemctl start nginx
+    - name: backup original nginx config
+      command: mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.original
+    - name: copy nginx config
+      copy: 
+        src: nginx-config
+        dest: /etc/nginx.conf
+    - name: reload nginx config
+      command: nginx -s reload
+    - name: get ip for cluster setup
+      debug:
+        msg: "{{ hostvars[k3s-loadbalancer]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}"
+
+
+- name: install k3s on cluster servers
+  become: yes
+  tasks: 
+    - name: install k3s and create the cluster
+      hosts: k3s-first-server
+      command: curl -sfL https://get.k3s.io | sh -s - server --tls-san={{ hostvars[k3s-loadbalancer]['ansible_env'].SSH_CONNECTION.split(' ')[2] }} --cluster-init
+    - name: get cluster token
+      hosts: k3s-first-server
+      command: cat /var/lib/rancher/k3s/server/node-token
+      register: k3s-cluster-token
+    - name: install k3s on the other servers
+      hosts: k3s-more-servers
+      command: curl -sfL https://get.k3s.io | K3S_TOKEN={{ k3s-cluster-token }} sh -s - server --server https://{{ hostvars[k3s-first-server]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}:6443
+    
+
+- name: echo k3s.yaml to use in kubectl 
+  become: yes
+  tasks: 
+    - name: echo k3s.yaml 
+      hosts: k3s-first-server
+      command: cat /etc/rancher/k3s/k3s.yaml
+      register: k3s-config
+    - debug: msg="{{ k3s-config.stdout }}"

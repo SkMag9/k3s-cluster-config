@@ -1,0 +1,22 @@
+---
+[ubuntu]
+10.0.0.10 # k3s-lb-01
+10.0.0.11 # k3s-server-01
+10.0.0.12 # k3s-server-02
+10.0.0.13 # k3s-server-03
+
+[k3s-cluster]
+10.0.0.10  # k3s-lb-01
+10.0.0.11  # k3s-server-01
+10.0.0.12  # k3s-server-02
+10.0.0.13  # k3s-server-03
+
+[k3s-loadbalancer]
+10.0.0.10  # k3s-lb-01
+
+[k3s-first-server]
+10.0.0.11  # k3s-server-01
+
+[k3s-more-servers]
+10.0.0.12  # k3s-server-02
+10.0.0.13  # k3s-server-03
