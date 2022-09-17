@@ -44,16 +44,21 @@
         msg: "{{ hostvars[k3s_loadbalancer]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}"
 
 
-- name: install k3s on cluster servers
+- name: install k3s on first cluster server
   become: yes
+  hosts: k3s_first_server
   tasks: 
     - name: install k3s and create the cluster
-      hosts: k3s_first_server
       command: curl -sfL https://get.k3s.io | sh -s - server --tls-san={{ hostvars[k3s_loadbalancer]['ansible_env'].SSH_CONNECTION.split(' ')[2] }} --cluster-init
     - name: get cluster token
-      hosts: k3s_first_server
       command: cat /var/lib/rancher/k3s/server/node-token
       register: k3s_cluster_token
+
+
+- name: install k3s on further servers
+  become: yes
+  hosts: k3s_more_servers
+  tasks:
     - name: install k3s on the other servers
       hosts: k3s_more_servers
       command: curl -sfL https://get.k3s.io | K3S_TOKEN={{ k3s_cluster_token }} sh -s - server --server https://{{ hostvars[k3s_first_server]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}:6443
