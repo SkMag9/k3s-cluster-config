@@ -1,7 +1,7 @@
 ---
 - name: update all servers
   become: yes
-  hosts: ubuntu
+  hosts: k3s-cluster
   tasks:
     - name: update caches
       apt:
@@ -9,6 +9,16 @@
     - name: update ubuntu servers
       apt:
         upgrade: yes
+
+
+- name: install packages
+  become: yes
+  hosts: k3s-cluster
+  tasks: 
+    - name: install nfs-common
+      apt:
+        name: nfs-common
+        state: latest
         
 
 - name: configure loadbalancer 
